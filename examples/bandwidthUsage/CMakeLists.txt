@@ -36,4 +36,5 @@ endif()
 add_executable(bandwidthUsage ${SOURCES} ${HEADERS})
 
 target_link_libraries (bandwidthUsage BandwidthUsageThread)
-
+target_link_libraries (bandwidthUsage Datetime)
+target_link_libraries (bandwidthUsage System)
