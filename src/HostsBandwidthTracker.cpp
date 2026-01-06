@@ -8,7 +8,6 @@
 
 using namespace std;
 using json = nlohmann::json;
-using ordered_json = nlohmann::ordered_json;
 
 // It updates the internal hosts and the running flag according to the given json array.
 // The json array must contain objects with the following fields:
