@@ -36,7 +36,7 @@ public:
 	void stop();
 	bool isRunning() const;
 
-	uint64_t getAvgBandwidthUsage() const;
+	std::pair<uint64_t, uint64_t> getAvgBandwidthUsage() const;
 
 private:
 	std::thread _thread;
@@ -44,9 +44,13 @@ private:
 	std::atomic<bool> _stopSignal;
 	std::string _networkInterfaceToMonitor;
 
-	std::atomic<uint64_t> _avgBandwidthUsage;
-	BandwidthStats _bandwidthStats;
+	std::atomic<uint64_t> _txAvgBandwidthUsage;
+	std::atomic<uint64_t> _rxAvgBandwidthUsage;
+	BandwidthStats _txBandwidthStats{false};
+	BandwidthStats _rxBandwidthStats{true};
 
 	void run();
+
+	virtual void newBandwidthUsageAvailable(uint64_t& txAvgBandwidthUsage, uint64_t& rxAvgBandwidthUsage) const;
 };
 

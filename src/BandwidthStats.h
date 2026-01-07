@@ -16,12 +16,10 @@
 #include <chrono>
 #include <unordered_map>
 
-// using namespace std;
-
 class BandwidthStats
 {
   public:
-	BandwidthStats(): _currentHour(-1), _hourlyData(), _dailyPeak(0), _dailyPeakTime(), _dailySamples() { };
+	explicit BandwidthStats(const bool rx): _rx(rx), _currentHour(-1), _hourlyData(), _dailyPeak(0), _dailyPeakTime(), _dailySamples() { };
 	~BandwidthStats() = default;
 
 	void addSample(uint64_t bytesUsed, std::chrono::system_clock::time_point timestamp);
@@ -30,6 +28,7 @@ class BandwidthStats
 	// il mutex non serve visto che un solo thread gestisce la bandwidthUsage
 	// mutex _mutex;
 
+	bool _rx;
 	std::string _currentDay;
 	int _currentHour;
 

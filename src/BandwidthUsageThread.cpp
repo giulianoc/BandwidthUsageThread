@@ -106,7 +106,8 @@ void BandwidthUsageThread::run()
 		// this_thread::sleep_for(chrono::seconds(_bandwidthUsagePeriodInSeconds));
 
 		// aggiorniamo la banda usata da questo server. Ci server per rispondere alla API .../bandwidthUsage
-		uint64_t avgBandwidthUsage = 0;
+		uint64_t txAvgBandwidthUsage = 0;
+		uint64_t rxAvgBandwidthUsage = 0;
 		try
 		{
 			// impieghera' 15 secs
@@ -128,7 +129,8 @@ void BandwidthUsageThread::run()
 				);
 				if (_networkInterfaceToMonitor == iface)
 				{
-					avgBandwidthUsage = tx;
+					txAvgBandwidthUsage = tx;
+					rxAvgBandwidthUsage = rx;
 					networkInterfaceToMonitorFound = true;
 					// break; commentato in modo da avere sempre il log della banda usata da tutte le reti (public e internal)
 				}
@@ -141,25 +143,32 @@ void BandwidthUsageThread::run()
 					_networkInterfaceToMonitor
 				);
 			else
-				_avgBandwidthUsage.store(avgBandwidthUsage, std::memory_order_relaxed);
-			SPDLOG_INFO(
-				"bandwidthUsageThread, avgBandwidthInMbps"
-				", avgBandwidthUsage: @{}@Mbps",
-				static_cast<uint32_t>((avgBandwidthUsage * 8) / 1000000)
-			);
+			{
+				_txAvgBandwidthUsage.store(txAvgBandwidthUsage, std::memory_order_relaxed);
+				_rxAvgBandwidthUsage.store(rxAvgBandwidthUsage, std::memory_order_relaxed);
+				SPDLOG_INFO(
+					"bandwidthUsageThread, avgBandwidthInMbps"
+					", txAvgBandwidthUsage: @{}@Mbps"
+					", rxAvgBandwidthUsage: @{}@Mbps",
+					static_cast<uint32_t>((txAvgBandwidthUsage * 8) / 1000000),
+					static_cast<uint32_t>((rxAvgBandwidthUsage * 8) / 1000000)
+				);
+				newBandwidthUsageAvailable(txAvgBandwidthUsage, rxAvgBandwidthUsage);
+			}
 
 			// loggo il picco
 			for (const auto &[iface, stats] : peakInBytes)
 			{
 				if (_networkInterfaceToMonitor == iface)
 				{
-					auto [peakRx, peakTx] = stats;
+					auto [rxPeak, txPeak] = stats;
 					// messaggio usato da servicesStatusLibrary::mms_delivery_check_bandwidth_usage
 					SPDLOG_INFO(
 						"bandwidthUsageThread, peakBandwidthInMbps"
 						", iface: {}"
-						", peakTx: @{}@Mbps",
-						iface, static_cast<uint32_t>((peakTx * 8) / 1000000)
+						", txPeak: @{}@Mbps"
+						", rxPeak: @{}@Mbps",
+						iface, static_cast<uint32_t>((txPeak * 8) / 1000000), static_cast<uint32_t>((rxPeak * 8) / 1000000)
 					);
 					break;
 				}
@@ -178,7 +187,8 @@ void BandwidthUsageThread::run()
 		try
 		{
 			// addSample logs when a new day is started
-			_bandwidthStats.addSample(avgBandwidthUsage, std::chrono::system_clock::now());
+			_txBandwidthStats.addSample(txAvgBandwidthUsage, std::chrono::system_clock::now());
+			_rxBandwidthStats.addSample(rxAvgBandwidthUsage, std::chrono::system_clock::now());
 		}
 		catch (std::exception &e)
 		{
@@ -191,6 +201,11 @@ void BandwidthUsageThread::run()
 	}
 }
 
-uint64_t BandwidthUsageThread::getAvgBandwidthUsage() const {
-	return _avgBandwidthUsage.load(std::memory_order_relaxed);
+std::pair<uint64_t, uint64_t> BandwidthUsageThread::getAvgBandwidthUsage() const {
+	return std::make_pair(_txAvgBandwidthUsage.load(std::memory_order_relaxed), _rxAvgBandwidthUsage.load(std::memory_order_relaxed));
 };
+
+void BandwidthUsageThread::newBandwidthUsageAvailable(uint64_t& txAvgBandwidthUsage, uint64_t& rxAvgBandwidthUsage) const
+{
+	// default implementation does nothing
+}

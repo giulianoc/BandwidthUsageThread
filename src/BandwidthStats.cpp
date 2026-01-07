@@ -42,7 +42,9 @@ void BandwidthStats::addSample(uint64_t bytesUsed, chrono::system_clock::time_po
 
 			const double avg = static_cast<double>(sum) / samples.size();
 			SPDLOG_INFO(
-				"BandwidthStats. addSample. Day: {}, Hour {}, Peak: {} Mbps, Avg: {} Mbps", _currentDay, _currentHour, (peak * 8) / 1000000,
+				"{} BandwidthStats. addSample. Day: {}, Hour {}, Peak: {} Mbps, Avg: {} Mbps",
+				_rx ? "RX" : "TX",
+				_currentDay, _currentHour, (peak * 8) / 1000000,
 				std::format("{:.1f}", (avg * 8) / 1000000)
 			);
 		}
@@ -79,7 +81,9 @@ void BandwidthStats::logAndReset()
 
 		const double avg = static_cast<double>(sum) / samples.size();
 		SPDLOG_INFO(
-			"BandwidthStats. Day: @{}@, Hour: @{}@, Peak: @{}@ Mbps, Avg: @{}@ Mbps", _currentDay, hour, (peak * 8) / 1000000,
+			"{} BandwidthStats. Day: @{}@, Hour: @{}@, Peak: @{}@ Mbps, Avg: @{}@ Mbps",
+			_rx ? "RX" : "TX",
+			_currentDay, hour, (peak * 8) / 1000000,
 			std::format("{:.1f}", (avg * 8) / 1000000)
 		);
 	}
@@ -92,7 +96,9 @@ void BandwidthStats::logAndReset()
 		double avg = static_cast<double>(total) / _dailySamples.size();
 
 		SPDLOG_INFO(
-			"BandwidthStats. Day: @{}@, Daily Peak: @{}@ Mbps at @{}@, Daily Avg: @{}@ Mbps", _currentDay, (_dailyPeak * 8) / 1000000,
+			"{} BandwidthStats. Day: @{}@, Daily Peak: @{}@ Mbps at @{}@, Daily Avg: @{}@ Mbps",
+			_rx ? "RX" : "TX",
+			_currentDay, (_dailyPeak * 8) / 1000000,
 			Datetime::utcToLocalString(chrono::system_clock::to_time_t(_dailyPeakTime)), std::format("{:.1f}", (avg * 8) / 1000000)
 		);
 	}
