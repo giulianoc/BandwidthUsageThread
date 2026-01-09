@@ -25,6 +25,7 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 
 #include "System.h"
 
+#include <nlohmann/detail/exceptions.hpp>
 #include <spdlog/spdlog.h>
 
 BandwidthUsageThread::BandwidthUsageThread(): _running(false), _stopSignal(false)
@@ -153,7 +154,18 @@ void BandwidthUsageThread::run()
 					static_cast<uint32_t>((txAvgBandwidthUsage * 8) / 1000000),
 					static_cast<uint32_t>((rxAvgBandwidthUsage * 8) / 1000000)
 				);
-				newBandwidthUsageAvailable(txAvgBandwidthUsage, rxAvgBandwidthUsage);
+
+				try
+				{
+					newBandwidthUsageAvailable(txAvgBandwidthUsage, rxAvgBandwidthUsage);
+				}
+				catch (std::exception &e)
+				{
+					SPDLOG_ERROR("newBandwidthUsageAvailable failed"
+						", exception: {}",
+						e.what()
+					);
+				}
 			}
 
 			// loggo il picco
