@@ -28,7 +28,8 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 #include <nlohmann/detail/exceptions.hpp>
 #include <spdlog/spdlog.h>
 
-BandwidthUsageThread::BandwidthUsageThread(): _running(false), _stopSignal(false)
+BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor):
+	_running(false), _stopSignal(false)
 {
 	try
 	{
@@ -43,9 +44,20 @@ BandwidthUsageThread::BandwidthUsageThread(): _running(false), _stopSignal(false
 				", ip address: {}",
 				interfaceName, interfaceType, privateIp, ipAddress
 			);
-			if (interfaceType != "IPv4" || privateIp)
-				continue; // rete interna
-			_networkInterfaceToMonitor = interfaceName;
+			if (_networkInterfaceToMonitor.empty())
+			{
+				if (interfaceNameToMonitor)
+				{
+					if (interfaceNameToMonitor && *interfaceNameToMonitor == interfaceName)
+						_networkInterfaceToMonitor = interfaceName;
+				}
+				else
+				{
+					// by default, monitor the first public IPv4 interface
+					if (interfaceType == "IPv4" && !privateIp)
+						_networkInterfaceToMonitor = interfaceName;
+				}
+			}
 		}
 		SPDLOG_INFO(
 			"getActiveNetworkInterface"

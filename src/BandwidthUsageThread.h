@@ -29,7 +29,7 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 class BandwidthUsageThread
 {
 public:
-	BandwidthUsageThread();
+	BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor = std::nullopt);
 	virtual ~BandwidthUsageThread();
 
 	void start();
