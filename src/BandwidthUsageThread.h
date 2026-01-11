@@ -30,7 +30,7 @@ class BandwidthUsageThread
 {
 public:
 	BandwidthUsageThread();
-  virtual ~BandwidthUsageThread();
+	virtual ~BandwidthUsageThread();
 
 	void start();
 	void stop();
