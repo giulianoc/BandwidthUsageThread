@@ -98,7 +98,7 @@ optional<string> HostsBandwidthTracker::getMinBandwidthHost()
 	{
 		auto [running, bandwidth, bandwidthCorrection] = bandwidthDetails;
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getMinBandwidthHost"
 			", host: {}"
 			", running: {}"
@@ -122,7 +122,7 @@ optional<string> HostsBandwidthTracker::getMinBandwidthHost()
 	if (minHost.empty())
 		return nullopt;
 
-	SPDLOG_INFO(
+	LOG_INFO(
 		"getMinBandwidthHost"
 		", minHost: {}"
 		", minBandwidth: {} ({} Mbps)",
@@ -143,7 +143,7 @@ uint64_t HostBandwidthTracker::getBandwidth(const string &hostname)
 void HostBandwidthTracker::logDetails() const
 {
 	for (const auto &[host, bandwidth] : _bandwidthMap)
-		SPDLOG_INFO(
+		LOG_INFO(
 			"HostBandwidthTracker"
 			", host: {}"
 			", bandwidth (bytes): {}",

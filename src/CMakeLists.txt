@@ -33,6 +33,7 @@ SET (HEADERS
 )
 
 include_directories("${SPDLOG_INCLUDE_DIR}")
+include_directories("${THREADLOGGER_INCLUDE_DIR}")
 include_directories("${DATETIME_INCLUDE_DIR}")
 include_directories("${SYSTEM_INCLUDE_DIR}")
 include_directories("${NLOHMANN_INCLUDE_DIR}")
@@ -41,6 +42,7 @@ include_directories("${JSONUTILS_INCLUDE_DIR}")
 add_library (BandwidthUsageThread SHARED ${SOURCES} ${HEADERS})
 
 if(APPLE)
+	target_link_libraries(BandwidthUsageThread ThreadLogger)
 	target_link_libraries(BandwidthUsageThread System)
 	target_link_libraries(BandwidthUsageThread Datetime)
 endif()

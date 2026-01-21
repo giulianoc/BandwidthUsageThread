@@ -1,7 +1,7 @@
 
 #include "BandwidthStats.h"
 #include "Datetime.h"
-#include "spdlog/spdlog.h"
+#include "ThreadLogger.h"
 
 using namespace std;
 
@@ -41,7 +41,7 @@ void BandwidthStats::addSample(uint64_t bytesUsed, chrono::system_clock::time_po
 			}
 
 			const double avg = static_cast<double>(sum) / samples.size();
-			SPDLOG_INFO(
+			LOG_INFO(
 				"{} BandwidthStats. addSample. Day: {}, Hour {}, Peak: {} Mbps, Avg: {} Mbps",
 				_rx ? "RX" : "TX",
 				_currentDay, _currentHour, (peak * 8) / 1000000,
@@ -80,7 +80,7 @@ void BandwidthStats::logAndReset()
 		}
 
 		const double avg = static_cast<double>(sum) / samples.size();
-		SPDLOG_INFO(
+		LOG_INFO(
 			"{} BandwidthStats. Day: @{}@, Hour: @{}@, Peak: @{}@ Mbps, Avg: @{}@ Mbps",
 			_rx ? "RX" : "TX",
 			_currentDay, hour, (peak * 8) / 1000000,
@@ -95,7 +95,7 @@ void BandwidthStats::logAndReset()
 			total += val;
 		double avg = static_cast<double>(total) / _dailySamples.size();
 
-		SPDLOG_INFO(
+		LOG_INFO(
 			"{} BandwidthStats. Day: @{}@, Daily Peak: @{}@ Mbps at @{}@, Daily Avg: @{}@ Mbps",
 			_rx ? "RX" : "TX",
 			_currentDay, (_dailyPeak * 8) / 1000000,

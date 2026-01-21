@@ -26,7 +26,7 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 #include "System.h"
 
 #include <nlohmann/detail/exceptions.hpp>
-#include <spdlog/spdlog.h>
+#include "ThreadLogger.h"
 
 BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor):
 	_running(false), _stopSignal(false)
@@ -36,7 +36,7 @@ BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &int
 		std::vector<std::tuple<std::string, std::string, bool, std::string>> nativeNetworkInterfaces = System::getActiveNetworkInterface();
 		for (const auto &[interfaceName, interfaceType, privateIp, ipAddress] : nativeNetworkInterfaces)
 		{
-			SPDLOG_INFO(
+			LOG_INFO(
 				"getActiveNetworkInterface"
 				", interface name: {}"
 				", interface type: {}"
@@ -59,7 +59,7 @@ BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &int
 				}
 			}
 		}
-		SPDLOG_INFO(
+		LOG_INFO(
 			"getActiveNetworkInterface"
 			", _networkInterfaceToMonitor: {}",
 			_networkInterfaceToMonitor
@@ -67,7 +67,7 @@ BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &int
 	}
 	catch (std::exception &e)
 	{
-		SPDLOG_ERROR(
+		LOG_ERROR(
 			"System::getActiveNetworkInterface failed"
 			", exception: {}",
 			e.what()
@@ -86,7 +86,7 @@ void BandwidthUsageThread::start()
 	if (_running)
 	{
 		const std::string errorMessage = "BandwidthUsageThread already running";
-		SPDLOG_ERROR(errorMessage);
+		LOG_ERROR(errorMessage);
 		throw std::runtime_error(errorMessage);
 	}
 
@@ -133,7 +133,7 @@ void BandwidthUsageThread::run()
 			for (const auto &[iface, stats] : avgBandwidth)
 			{
 				auto [rx, tx] = stats;
-				SPDLOG_INFO(
+				LOG_INFO(
 					"bandwidthUsageThread, avgBandwidthInMbps"
 					", iface: {}"
 					", rx: {} ({}Mbps)"
@@ -149,7 +149,7 @@ void BandwidthUsageThread::run()
 				}
 			}
 			if (!networkInterfaceToMonitorFound)
-				SPDLOG_WARN(
+				LOG_WARN(
 					"bandwidthUsageThread, getAvgAndPeakBandwidthInBytes"
 					", networkInterfaceToMonitor not found"
 					", _networkInterfaceToMonitor: {}",
@@ -159,7 +159,7 @@ void BandwidthUsageThread::run()
 			{
 				_txAvgBandwidthUsage.store(txAvgBandwidthUsage, std::memory_order_relaxed);
 				_rxAvgBandwidthUsage.store(rxAvgBandwidthUsage, std::memory_order_relaxed);
-				SPDLOG_INFO(
+				LOG_INFO(
 					"bandwidthUsageThread, avgBandwidthInMbps"
 					", txAvgBandwidthUsage: @{}@Mbps"
 					", rxAvgBandwidthUsage: @{}@Mbps",
@@ -173,7 +173,7 @@ void BandwidthUsageThread::run()
 				}
 				catch (std::exception &e)
 				{
-					SPDLOG_ERROR("newBandwidthUsageAvailable failed"
+					LOG_ERROR("newBandwidthUsageAvailable failed"
 						", exception: {}",
 						e.what()
 					);
@@ -187,7 +187,7 @@ void BandwidthUsageThread::run()
 				{
 					auto [rxPeak, txPeak] = stats;
 					// messaggio usato da servicesStatusLibrary::mms_delivery_check_bandwidth_usage
-					SPDLOG_INFO(
+					LOG_INFO(
 						"bandwidthUsageThread, peakBandwidthInMbps"
 						", iface: {}"
 						", txPeak: @{}@Mbps"
@@ -200,7 +200,7 @@ void BandwidthUsageThread::run()
 		}
 		catch (std::exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"System::getBandwidthInMbps failed"
 				", exception: {}",
 				e.what()
@@ -216,7 +216,7 @@ void BandwidthUsageThread::run()
 		}
 		catch (std::exception &e)
 		{
-			SPDLOG_ERROR(
+			LOG_ERROR(
 				"_bandwidthStats.addSample failed"
 				", exception: {}",
 				e.what()
