@@ -27,6 +27,7 @@ SET (SOURCES
 SET (HEADERS
 )
 
+include_directories("${SPDLOG_INCLUDE_DIR}")
 include_directories(${BANDWIDTHUSAGETHREAD_INCLUDE_DIR})
 
 if(APPLE)

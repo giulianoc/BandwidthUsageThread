@@ -24,12 +24,14 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 #pragma once
 #include "BandwidthStats.h"
 
+#include <spdlog/logger.h>
 #include <thread>
 
 class BandwidthUsageThread
 {
 public:
-	BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor = std::nullopt);
+	BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor = std::nullopt,
+		const std::shared_ptr<spdlog::logger>& logger = nullptr);
 	virtual ~BandwidthUsageThread();
 
 	void start();
@@ -43,6 +45,7 @@ private:
 	std::atomic<bool> _running;
 	std::atomic<bool> _stopSignal;
 	std::string _networkInterfaceToMonitor;
+	std::shared_ptr<spdlog::logger> _logger;
 
 	std::atomic<uint64_t> _txAvgBandwidthUsage;
 	std::atomic<uint64_t> _rxAvgBandwidthUsage;

@@ -28,8 +28,9 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 #include <nlohmann/detail/exceptions.hpp>
 #include "ThreadLogger.h"
 
-BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor):
-	_running(false), _stopSignal(false)
+BandwidthUsageThread::BandwidthUsageThread(const std::optional<std::string> &interfaceNameToMonitor,
+	const std::shared_ptr<spdlog::logger>& logger):
+	_running(false), _stopSignal(false), _logger(logger)
 {
 	try
 	{
@@ -113,6 +114,10 @@ bool BandwidthUsageThread::isRunning() const
 
 void BandwidthUsageThread::run()
 {
+	std::optional<ThreadLogger> threadLogger;
+	if (_logger)
+		threadLogger.emplace(_logger);
+
 	while (!_stopSignal)
 	{
 		// non serve lo sleep perchè lo sleep è già all'interno di System::getBandwidthInBytes
