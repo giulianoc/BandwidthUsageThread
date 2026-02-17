@@ -124,7 +124,7 @@ void BandwidthUsageThread::run()
 		// this_thread::sleep_for(chrono::seconds(_bandwidthUsagePeriodInSeconds));
 
 		// aggiorniamo la banda usata da questo server. Ci server per rispondere alla API .../bandwidthUsage
-		uint64_t txAvgBandwidthUsage = 0;
+		uint64_t txAvgBandwidthUsage = 0; // bytes
 		uint64_t rxAvgBandwidthUsage = 0;
 		try
 		{
