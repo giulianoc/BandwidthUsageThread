@@ -18,6 +18,8 @@ compile_commands.json
 nbproject
 .DS_Store
 
+examples/bandwidthUsage/bandwidthUsage
+
 *.cgi
 *.fcgi
 *.sln
