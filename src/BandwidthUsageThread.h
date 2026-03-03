@@ -49,11 +49,15 @@ private:
 
 	std::atomic<uint64_t> _txAvgBandwidthUsage;
 	std::atomic<uint64_t> _rxAvgBandwidthUsage;
+	std::atomic<uint64_t> _txPeakBandwidthUsage;
+	std::atomic<uint64_t> _rxPeakBandwidthUsage;
 	BandwidthStats _txBandwidthStats{false};
 	BandwidthStats _rxBandwidthStats{true};
 
 	void run();
 
-	virtual void newBandwidthUsageAvailable(uint64_t& txAvgBandwidthUsage, uint64_t& rxAvgBandwidthUsage) const;
+	virtual void newBandwidthUsageAvailable(uint64_t& rxAvgBandwidthUsage, uint64_t& txAvgBandwidthUsage,
+		uint64_t& rxPeakBandwidthUsage, uint64_t& txPeakBandwidthUsage) const;
+
 };
 
