@@ -161,9 +161,9 @@ void BandwidthUsageThread::run()
 					LOG_INFO(
 						"bandwidthUsageThread, peakBandwidthInMbps"
 						", iface: {}"
-						", txPeak: @{}@Mbps"
-						", rxPeak: @{}@Mbps",
-						iface, static_cast<uint32_t>((txPeak * 8) / 1000000), static_cast<uint32_t>((rxPeak * 8) / 1000000)
+						", rxPeak: @{}@Mbps"
+						", txPeak: @{}@Mbps",
+						iface, static_cast<uint32_t>((rxPeak * 8) / 1000000), static_cast<uint32_t>((txPeak * 8) / 1000000)
 					);
 					// break; commentato in modo da avere sempre il log della banda usata da tutte le reti (public e internal)
 				}
