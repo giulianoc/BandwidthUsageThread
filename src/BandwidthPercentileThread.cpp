@@ -178,8 +178,9 @@ void BandwidthPercentileThread::run()
 					// messaggio usato da servicesStatusLibrary::mms_delivery_check_bandwidth_usage
 					LOG_INFO(
 						"BandwidthPercentileThread, bandwidthInMbps"
+						", percentile: {}"
 						", rxPercentileBandwidthUsage: @{}@Mbps"
-						", txPercentileBandwidthUsage: @{}@Mbps",
+						", txPercentileBandwidthUsage: @{}@Mbps", _percentile,
 						static_cast<uint32_t>((rxPercentileBandwidthUsage * 8) / 1000000),
 						static_cast<uint32_t>((txPercentileBandwidthUsage * 8) / 1000000)
 					);
