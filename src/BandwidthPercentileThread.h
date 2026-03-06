@@ -23,6 +23,7 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 
 #pragma once
 #include <spdlog/logger.h>
+#include <deque>
 #include <thread>
 
 class BandwidthPercentileThread
