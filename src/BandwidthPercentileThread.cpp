@@ -119,7 +119,15 @@ void BandwidthPercentileThread::run()
 	if (_logger)
 		threadLogger.emplace(_logger);
 
-	std::size_t capacity = 2880; // ad es. 24h a finestre da 30s -> 2880 campioni
+	// se samples contiene 2880 valori (24h a 30s), il P95 riflette la distribuzione delle ultime 24 ore,
+	// includendo anche situazioni “vecchie” (es. notte) che magari non sono più rappresentative adesso;
+	// più grande è la finestra (capacità della deque/ring), più il percentile diventa stabile,
+	// ma anche meno reattivo ai cambiamenti recenti.
+	// Dipende dallo scopo:
+	// - Routing / decisioni operative (qui e ora): vuoi percentili su una finestra recente, tipo ultimi 10–30 minuti o ultima ora.
+	// - Capacity planning (trend): vuoi finestre lunghe, tipo 24h / 7 giorni, perché ti interessa la variabilità giornaliera.
+	std::size_t capacityInMinutes = 15; // caso 1 (decisioni operative, 15 min)
+	std::size_t capacity = (capacityInMinutes * 60) / _windowInSeconds;
 	std::deque<double> rxSamplesBps;
 	std::deque<double> txSamplesBps;
 
