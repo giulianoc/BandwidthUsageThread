@@ -28,8 +28,10 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 #include "ThreadLogger.h"
 
 BandwidthPercentileThread::BandwidthPercentileThread(const std::optional<std::string> &interfaceNameToMonitor,
-	const int16_t windowInSeconds, const double percentile, const std::shared_ptr<spdlog::logger>& logger):
-	_windowInSeconds(windowInSeconds), _percentile(percentile), _running(false), _stopSignal(false), _logger(logger)
+	const int16_t windowInSeconds, const double percentile, const int16_t percentilePeriodInSeconds,
+	const std::shared_ptr<spdlog::logger>& logger):
+	_windowInSeconds(windowInSeconds), _percentile(percentile), _percentilePeriodInSeconds(percentilePeriodInSeconds),
+	_running(false), _stopSignal(false), _logger(logger)
 {
 	try
 	{
@@ -122,7 +124,7 @@ void BandwidthPercentileThread::run()
 	std::deque<double> txSamplesBps;
 
 	using clock = std::chrono::steady_clock;
-	constexpr auto percentilePeriod = std::chrono::minutes(5);
+	const auto percentilePeriod = std::chrono::seconds(_percentilePeriodInSeconds);
 	auto nextPercentileAt = clock::now() + percentilePeriod;
 
 	auto before = System::getNetworkUsage();
