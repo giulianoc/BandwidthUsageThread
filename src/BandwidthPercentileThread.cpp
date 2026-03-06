@@ -141,8 +141,7 @@ void BandwidthPercentileThread::run()
 			// ritorna bytes/sec per iface tra due letture distanziate di elapsedSeconds
 			auto rates = System::bandwidthBetween(before, after, elapsed.count());
 
-			auto it = rates.find(_networkInterfaceToMonitor);
-			if (it != rates.end())
+			if (auto it = rates.find(_networkInterfaceToMonitor); it != rates.end())
 			{
 				const auto& [rxAvgBandwidthUsage, txAvgBandwidthUsage] = it->second;
 
@@ -169,29 +168,37 @@ void BandwidthPercentileThread::run()
 				{
 					nextPercentileAt += percentilePeriod;
 
-					double rxPercentileBandwidthUsage = percentileNearestRank(rxSamplesBps, _percentile);
-					double txPercentileBandwidthUsage = percentileNearestRank(txSamplesBps, _percentile);
+					auto [rxPercentileBandwidthUsage, rxPeakBandwidthUsage] = percentileNearestRank(rxSamplesBps, _percentile);
+					auto [txPercentileBandwidthUsage, txPeakBandwidthUsage] = percentileNearestRank(txSamplesBps, _percentile);
 
 					_rxPercentileBandwidthUsage.store(rxPercentileBandwidthUsage, std::memory_order_relaxed);
 					_txPercentileBandwidthUsage.store(txPercentileBandwidthUsage, std::memory_order_relaxed);
+					_rxPeakBandwidthUsage.store(rxPeakBandwidthUsage, std::memory_order_relaxed);
+					_txPeakBandwidthUsage.store(txPeakBandwidthUsage, std::memory_order_relaxed);
 
 					// messaggio usato da servicesStatusLibrary::mms_delivery_check_bandwidth_usage
 					LOG_INFO(
 						"BandwidthPercentileThread, bandwidthInMbps"
 						", percentile: {}"
 						", rxPercentileBandwidthUsage: @{}@Mbps"
-						", txPercentileBandwidthUsage: @{}@Mbps", _percentile,
+						", rxPercentileBandwidthUsage: @{}@Mbps"
+						", txPeakBandwidthUsage: @{}@Mbps"
+						", txPeakBandwidthUsage: @{}@Mbps",
+						_percentile,
 						static_cast<uint32_t>((rxPercentileBandwidthUsage * 8) / 1000000),
-						static_cast<uint32_t>((txPercentileBandwidthUsage * 8) / 1000000)
+						static_cast<uint32_t>((txPercentileBandwidthUsage * 8) / 1000000),
+						static_cast<uint32_t>((rxPeakBandwidthUsage * 8) / 1000000),
+						static_cast<uint32_t>((txPeakBandwidthUsage * 8) / 1000000)
 					);
 
 					try
 					{
-						newPercentileBandwidthAvailable(rxPercentileBandwidthUsage, txPercentileBandwidthUsage);
+						newBandwidthStatsAvailable(rxPercentileBandwidthUsage, txPercentileBandwidthUsage,
+							rxPeakBandwidthUsage, txPeakBandwidthUsage);
 					}
 					catch (std::exception &e)
 					{
-						LOG_ERROR("BandwidthPercentileThread, newPercentileBandwidthAvailable failed"
+						LOG_ERROR("BandwidthPercentileThread, newBandwidthStatsAvailable failed"
 							", exception: {}",
 							e.what()
 						);
@@ -219,14 +226,16 @@ void BandwidthPercentileThread::run()
 	}
 }
 
-double BandwidthPercentileThread::percentileNearestRank(std::deque<double> samples, double p)
+// nearest-rank method: https://en.wikipedia.org/wiki/Percentile#Nearest-rank_method
+// ritorna { percentile, peak }
+std::pair<double, double> BandwidthPercentileThread::percentileNearestRank(std::deque<double> samples, double p)
 {
 	if (samples.empty())
-		return 0.0;
+		return {0.0, 0.0};
 	if (p <= 0.0)
-		return *std::ranges::min_element(samples);
+		return {*std::ranges::min_element(samples), *std::ranges::max_element(samples)};
 	if (p >= 1.0)
-		return *std::ranges::max_element(samples);
+		return {*std::ranges::max_element(samples), *std::ranges::max_element(samples)};
 
 	const std::size_t N = samples.size();
 	// nearest-rank: k = ceil(p*N) (1-based), index = k-1 (0-based)
@@ -235,14 +244,15 @@ double BandwidthPercentileThread::percentileNearestRank(std::deque<double> sampl
 		idx = N - 1;
 
 	std::ranges::nth_element(samples, samples.begin() + idx);
-	return samples[idx];
+	return {samples[idx], *std::ranges::max_element(samples)};
 }
 
 std::pair<double, double> BandwidthPercentileThread::getPercentileBandwidthUsage() const {
 	return std::make_pair(_rxPercentileBandwidthUsage.load(std::memory_order_relaxed), _txPercentileBandwidthUsage.load(std::memory_order_relaxed));
 };
 
-void BandwidthPercentileThread::newPercentileBandwidthAvailable(double& rxPercentileBandwidthUsage, double& txPercentileBandwidthUsage) const
+void BandwidthPercentileThread::newBandwidthStatsAvailable(double& rxPercentileBandwidthUsage, double& txPercentileBandwidthUsage,
+	double& rxPeakBandwidthUsage, double& txPeakBandwidthUsage)
 {
 	// default implementation does nothing
 }

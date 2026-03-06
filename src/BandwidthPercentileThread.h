@@ -50,11 +50,14 @@ private:
 
 	std::atomic<double> _rxPercentileBandwidthUsage;
 	std::atomic<double> _txPercentileBandwidthUsage;
+	std::atomic<double> _rxPeakBandwidthUsage;
+	std::atomic<double> _txPeakBandwidthUsage;
 
 	void run();
 
-	static double percentileNearestRank(std::deque<double> samples, double p);
+	static std::pair<double, double> percentileNearestRank(std::deque<double> samples, double p);
 
-	virtual void newPercentileBandwidthAvailable(double &rxPercentileBandwidthUsage, double &txPercentileBandwidthUsage) const;
+	virtual void newBandwidthStatsAvailable(double &rxPercentileBandwidthUsage, double &txPercentileBandwidthUsage,
+		double &rxPeakBandwidthUsage, double &txPeakBandwidthUsage);
 };
 
