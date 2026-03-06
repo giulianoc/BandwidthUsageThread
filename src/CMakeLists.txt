@@ -22,12 +22,14 @@
 
 SET (SOURCES
 		BandwidthStats.cpp
+		BandwidthPercentileThread.cpp
 		BandwidthUsageThread.cpp
 		HostsBandwidthTracker.cpp
 )
 
 SET (HEADERS
 		BandwidthStats.h
+		BandwidthPercentileThread.h
 		BandwidthUsageThread.h
 		HostsBandwidthTracker.h
 )
