@@ -30,8 +30,8 @@ class BandwidthPercentileThread
 {
 public:
 	BandwidthPercentileThread(const std::optional<std::string> &interfaceNameToMonitor = std::nullopt,
-		const int16_t windowInSeconds = 30, const double percentile = 0.95, const int16_t percentilePeriodInSeconds = 60,
-		const std::shared_ptr<spdlog::logger>& logger = nullptr);
+		const int16_t windowInSeconds = 30, const double percentile = 0.95, const int16_t percentileShortPeriodInSeconds = 60,
+		const int16_t percentileLongPeriodInMinutes = 60, const std::shared_ptr<spdlog::logger>& logger = nullptr);
 	virtual ~BandwidthPercentileThread();
 
 	void start();
@@ -44,7 +44,8 @@ private:
 	std::thread _thread;
 	int16_t _windowInSeconds;
 	double _percentile;
-	int16_t _percentilePeriodInSeconds;
+	int16_t _percentileShortPeriodInSeconds;
+	int16_t _percentileLongPeriodInMinutes;
 	std::atomic<bool> _running;
 	std::atomic<bool> _stopSignal;
 	std::string _networkInterfaceToMonitor;

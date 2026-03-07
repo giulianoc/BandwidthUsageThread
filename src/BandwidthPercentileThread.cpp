@@ -28,10 +28,10 @@ Copyright (C) Giuliano Catrambone (giulianocatrambone@gmail.com)
 #include "ThreadLogger.h"
 
 BandwidthPercentileThread::BandwidthPercentileThread(const std::optional<std::string> &interfaceNameToMonitor,
-	const int16_t windowInSeconds, const double percentile, const int16_t percentilePeriodInSeconds,
-	const std::shared_ptr<spdlog::logger>& logger):
-	_windowInSeconds(windowInSeconds), _percentile(percentile), _percentilePeriodInSeconds(percentilePeriodInSeconds),
-	_running(false), _stopSignal(false), _logger(logger)
+	const int16_t windowInSeconds, const double percentile, const int16_t percentileShortPeriodInSeconds,
+	const int16_t percentileLongPeriodInMinutes, const std::shared_ptr<spdlog::logger>& logger):
+	_windowInSeconds(windowInSeconds), _percentile(percentile), _percentileShortPeriodInSeconds(percentileShortPeriodInSeconds),
+	_percentileLongPeriodInMinutes(percentileLongPeriodInMinutes), _running(false), _stopSignal(false), _logger(logger)
 {
 	try
 	{
@@ -126,14 +126,22 @@ void BandwidthPercentileThread::run()
 	// Dipende dallo scopo:
 	// - Routing / decisioni operative (qui e ora): vuoi percentili su una finestra recente, tipo ultimi 10–30 minuti o ultima ora.
 	// - Capacity planning (trend): vuoi finestre lunghe, tipo 24h / 7 giorni, perché ti interessa la variabilità giornaliera.
-	std::size_t capacityInMinutes = 15; // caso 1 (decisioni operative, 15 min)
-	std::size_t capacity = (capacityInMinutes * 60) / _windowInSeconds;
-	std::deque<double> rxSamplesBps;
-	std::deque<double> txSamplesBps;
+	std::size_t shortPeriodCapacityInMinutes = 15; // caso 1 (decisioni operative)
+	std::size_t shortPeriodCapacity = (shortPeriodCapacityInMinutes * 60) / _windowInSeconds;
+	std::deque<double> rxShortPeriodSamplesBps;
+	std::deque<double> txShortPeriodSamplesBps;
+
+	std::size_t longPeriodCapacityInHours = 24; // caso 2 (Capacity planning)
+	std::size_t longPeriodCapacity = (longPeriodCapacityInHours * 3600) / _windowInSeconds;
+	std::deque<double> rxLongPeriodSamplesBps;
+	std::deque<double> txLongPeriodSamplesBps;
 
 	using clock = std::chrono::steady_clock;
-	const auto percentilePeriod = std::chrono::seconds(_percentilePeriodInSeconds);
-	auto nextPercentileAt = clock::now() + percentilePeriod;
+	const auto percentileShortPeriod = std::chrono::seconds(_percentileShortPeriodInSeconds);
+	auto nextShortPercentileAt = clock::now() + percentileShortPeriod;
+
+	const auto percentileLongPeriod = std::chrono::minutes(_percentileLongPeriodInMinutes);
+	auto nextLongPercentileAt = clock::now() + percentileLongPeriod;
 
 	auto before = System::getNetworkUsage();
 	auto tBefore = std::chrono::steady_clock::now();
@@ -165,21 +173,33 @@ void BandwidthPercentileThread::run()
 					static_cast<uint32_t>((rxAvgBandwidthUsage * 8) / 1000000), static_cast<uint32_t>((txAvgBandwidthUsage * 8) / 1000000)
 				);
 
-				if (rxSamplesBps.size() == capacity)
-					rxSamplesBps.pop_front(); // rimuove il più vecchio
-				rxSamplesBps.push_back(rxAvgBandwidthUsage);
+				{
+					if (rxShortPeriodSamplesBps.size() == shortPeriodCapacity)
+						rxShortPeriodSamplesBps.pop_front(); // rimuove il più vecchio
+					rxShortPeriodSamplesBps.push_back(rxAvgBandwidthUsage);
 
-				if (txSamplesBps.size() == capacity)
-					txSamplesBps.pop_front(); // rimuove il più vecchio
-				txSamplesBps.push_back(txAvgBandwidthUsage);
+					if (txShortPeriodSamplesBps.size() == shortPeriodCapacity)
+						txShortPeriodSamplesBps.pop_front(); // rimuove il più vecchio
+					txShortPeriodSamplesBps.push_back(txAvgBandwidthUsage);
+				}
+
+				{
+					if (rxLongPeriodSamplesBps.size() == longPeriodCapacity)
+						rxLongPeriodSamplesBps.pop_front(); // rimuove il più vecchio
+					rxLongPeriodSamplesBps.push_back(rxAvgBandwidthUsage);
+
+					if (txLongPeriodSamplesBps.size() == longPeriodCapacity)
+						txLongPeriodSamplesBps.pop_front(); // rimuove il più vecchio
+					txLongPeriodSamplesBps.push_back(txAvgBandwidthUsage);
+				}
 
 				// calcolo il percentile solo ogni XXX minutes
-				if (const auto now = clock::now(); now >= nextPercentileAt)
+				if (const auto now = clock::now(); now >= nextShortPercentileAt)
 				{
-					nextPercentileAt += percentilePeriod;
+					nextShortPercentileAt += percentileShortPeriod;
 
-					auto [rxPercentileBandwidthUsage, rxPeakBandwidthUsage] = percentileNearestRank(rxSamplesBps, _percentile);
-					auto [txPercentileBandwidthUsage, txPeakBandwidthUsage] = percentileNearestRank(txSamplesBps, _percentile);
+					auto [rxPercentileBandwidthUsage, rxPeakBandwidthUsage] = percentileNearestRank(rxShortPeriodSamplesBps, _percentile);
+					auto [txPercentileBandwidthUsage, txPeakBandwidthUsage] = percentileNearestRank(txShortPeriodSamplesBps, _percentile);
 
 					_rxPercentileBandwidthUsage.store(rxPercentileBandwidthUsage, std::memory_order_relaxed);
 					_txPercentileBandwidthUsage.store(txPercentileBandwidthUsage, std::memory_order_relaxed);
@@ -213,6 +233,28 @@ void BandwidthPercentileThread::run()
 							e.what()
 						);
 					}
+				}
+
+				if (const auto now = clock::now(); now >= nextLongPercentileAt)
+				{
+					nextLongPercentileAt += percentileLongPeriod;
+
+					auto [rxPercentileBandwidthUsage, rxPeakBandwidthUsage] = percentileNearestRank(rxLongPeriodSamplesBps, _percentile);
+					auto [txPercentileBandwidthUsage, txPeakBandwidthUsage] = percentileNearestRank(txLongPeriodSamplesBps, _percentile);
+
+					LOG_INFO(
+						"BandwidthPercentileThread, long period percentileBandwidthInMbps"
+						", percentile: {}"
+						", rxPercentileBandwidthUsage: @{}@Mbps"
+						", txPercentileBandwidthUsage: @{}@Mbps"
+						", rxPeakBandwidthUsage: @{}@Mbps"
+						", txPeakBandwidthUsage: @{}@Mbps",
+						_percentile,
+						static_cast<uint32_t>((rxPercentileBandwidthUsage * 8) / 1000000),
+						static_cast<uint32_t>((txPercentileBandwidthUsage * 8) / 1000000),
+						static_cast<uint32_t>((rxPeakBandwidthUsage * 8) / 1000000),
+						static_cast<uint32_t>((txPeakBandwidthUsage * 8) / 1000000)
+					);
 				}
 			}
 			else
